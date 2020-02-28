@@ -19,6 +19,7 @@ steps:
         import fnmatch
         from io import open
         from pathlib import Path
+        from subprocess import check_call, CalledProcessError
 
         # This script is intended to be run against a single folder. All readme.md files (regardless of casing) will have the relative links
         # updated with appropriate full reference links. This is a recursive update..
@@ -204,7 +205,19 @@ steps:
 
                     with open(readme_location, "w", encoding="utf-8") as readme_stream:
                         readme_stream.write(new_content)
-                        
+                    
+                    if readme_content != new_content:
+                        try:
+                            check_call(["git", "diff", readme_location], cwd=args.root_folder)
+                        except CalledProcessError:
+                            logging.error("Unable to call git diff on {}. Check working directory. {}".format(readme_location, args.root_folder))
+                        except:
+                            logging.error("Unable to print output for an unknown exception while processing {}.".format(readme_location))
+
                 except Exception as e:
                     logging.error(e)
                     exit(1)
+
+  - script: |
+        git diff
+    displayName: Highlight Readme Updates
